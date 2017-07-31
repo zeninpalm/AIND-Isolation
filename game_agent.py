@@ -3,7 +3,7 @@ test your agent's strength against a set of known agents using tournament.py
 and include the results in your report.
 """
 import random
-
+from math import inf
 
 class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
@@ -124,7 +124,6 @@ class MinimaxPlayer(IsolationPlayer):
     search. You must finish and test this player to make sure it properly uses
     minimax to return a good move before the search time limit expires.
     """
-
     def get_move(self, game, time_left):
         """Search for the best move from the available legal moves and return a
         result before the time limit expires.
@@ -209,11 +208,71 @@ class MinimaxPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout()
+        self._check_timeout()
+
+        self.max_move = None
+        self.min_move = None
 
         # TODO: finish this function!
-        raise NotImplementedError
+        self._min_value(game, depth)
+        return self.min_move
+
+    def _check_timeout(self):
+        if self.time_left() < self.TIMER_THRESHOLD:
+                    raise SearchTimeout()
+
+    def _reaches_terminal(self, legal_moves, depth):
+        self._check_timeout()
+        return (len(legal_moves) <= 0) or (depth <= 0)
+
+    def _min_value(self, game, depth):
+        legal_moves = game.get_legal_moves()
+        if self._reaches_terminal(game.get_legal_moves(), depth):
+            return self.score(game, self)
+
+        value = inf
+        for move in legal_moves:
+            v = self._max_value(game.forecast_move(move), depth)
+            if v < value:
+                value = v
+                self.min_move = move
+
+        return value
+
+    def _max_value(self, game, depth):
+        legal_moves = game.get_legal_moves()
+        if self._reaches_terminal(game.get_legal_moves(), depth):
+            return self.score(game, self)
+
+        value = -inf
+        for move in legal_moves:
+            v = self._min_value(game.forecast_move(move), depth)
+            if v > value:
+                value = v
+                self.max_move = move
+
+        return value
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class AlphaBetaPlayer(IsolationPlayer):

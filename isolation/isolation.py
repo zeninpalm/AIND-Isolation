@@ -340,3 +340,6 @@ class Board(object):
             move_history.append(list(curr_move))
 
             self.apply_move(curr_move)
+
+    def first_player(self):
+        return self._player_1
