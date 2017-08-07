@@ -5,10 +5,31 @@ and include the results in your report.
 import random
 from math import inf
 
+
 class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
     pass
 
+def neighbors(game, player, location, levels=1):
+    """Calculate the neighbor cells of the cell at give location
+
+    Parameters
+    ----------
+    game : `isolation.Board`
+    player : object
+    location : (int, int)
+    levels : int
+    """
+    pass
+
+def direction(game, player, last_location, current_location):
+    """Return +1 if the distance between player and center decreases, or -1 if else.
+
+    Parameters
+    ----------
+    game : isolation.Board
+    """
+    pass
 
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
