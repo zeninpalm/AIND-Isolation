@@ -3,32 +3,10 @@ test your agent's strength against a set of known agents using tournament.py
 and include the results in your report.
 """
 import random
-from math import inf
-
+from math import inf, sqrt
 
 class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
-    pass
-
-def neighbors(game, player, location, levels=1):
-    """Calculate the neighbor cells of the cell at give location
-
-    Parameters
-    ----------
-    game : `isolation.Board`
-    player : object
-    location : (int, int)
-    levels : int
-    """
-    pass
-
-def direction(game, player, last_location, current_location):
-    """Return +1 if the distance between player and center decreases, or -1 if else.
-
-    Parameters
-    ----------
-    game : isolation.Board
-    """
     pass
 
 def custom_score(game, player):
@@ -55,6 +33,22 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
+    free_space_ratio = len(game.get_blank_spaces()) / (game.width * game.height)
+
+    if free_space_ratio > 0.9:
+        # We still in the early phase  of the game, center location should be more advantageous
+        return weighted_open_moves(game, player)
+    elif free_space_ratio > 0.5:
+        return free_spaces_of_neighborhood(game, player) - free_spaces_of_neighborhood(game, game.get_opponent(player))
+    elif free_space_ratio > 0.2:
+        # Now we are almost in the final phase, try to stay away from opponent
+        return distance_score(game.get_player_location(player), game.get_player_location(game.get_opponent(player)))
+    else:
+        #Now the board is almost full, legal_moves is the most important indicator
+        return distance_score(game.get_player_location(player), game.get_player_location(game.get_opponent(player)))
+
+
+def weighted_open_moves(game, player):
     if game.is_loser(player):
         return float("-inf")
 
@@ -69,11 +63,7 @@ def custom_score(game, player):
     for legal_move in legal_moves:
         own_score += weighted_board[legal_move]
 
-    opp_legal_moves = game.get_legal_moves(game.get_opponent(player))
-    opp_score = 0
-    for legal_move in opp_legal_moves:
-        opp_score += weighted_board[legal_move]
-    return float(own_score - opp_score)
+    return own_score
 
 
 def assign_weight_to_move(move):
@@ -90,31 +80,25 @@ def assign_weight_to_move(move):
         base_dist -= 1
 
 
+def free_spaces_of_neighborhood(game, player):
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    blank_spaces = game.get_blank_spaces()
+    location = game.get_player_location(player)
+    neighbor_hood_blanks = [l for l in blank_spaces if abs(l[0] - location[0]) <= 2 or abs(l[1] - location[1]) <= 2]
+    return len(neighbor_hood_blanks)
+
+
+def distance_score(loc1, loc2):
+    return sqrt((loc1[0] - loc2[0]) ** 2 + (loc1[1] - loc2[1]) ** 2) + 1
+
+
 def custom_score_2(game, player):
-    """Calculate the heuristic value of a game state from the point of view
-    of the given player.
-
-    Note: this function should be called from within a Player instance as
-    `self.score()` -- you should not need to call this function directly.
-
-    Parameters
-    ----------
-    game : `isolation.Board`
-        An instance of `isolation.Board` encoding the current state of the
-        game (e.g., player locations and blocked cells).
-
-    player : object
-        A player instance in the current game (i.e., an object corresponding to
-        one of the player objects `game.__player_1__` or `game.__player_2__`.)
-
-    Returns
-    -------
-    float
-        The heuristic value of the current game state to the specified player.
-    """
-    # TODO: finish this function!
-    return custom_score(game, player)
-
+    return random.randrange(-100, 100)
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -138,8 +122,7 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    return custom_score(game, player)
+    return 1.
 
 
 class IsolationPlayer:
@@ -165,7 +148,7 @@ class IsolationPlayer:
         timer expires.
     """
     def __init__(self, search_depth=3, score_fn=custom_score, timeout=10.):
-        self.search_depth = search_depth
+        self.search_depth = inf #search_depth
         self.score = score_fn
         self.time_left = None
         self.TIMER_THRESHOLD = timeout
