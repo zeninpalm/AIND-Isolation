@@ -33,20 +33,26 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
     free_space_ratio = len(game.get_blank_spaces()) / (game.width * game.height)
 
     if free_space_ratio > 0.9:
-        # We still in the early phase  of the game, center location should be more advantageous
-        return weighted_open_moves(game, player)
+        # We still in the start phase of the game, center location should be more advantageous
+        return float(weighted_open_moves(game, player))
     elif free_space_ratio > 0.5:
-        return free_spaces_of_neighborhood(game, player) - free_spaces_of_neighborhood(game, game.get_opponent(player))
+        # In the early phase of the game, we should move sparse space
+        return float(free_spaces_of_neighborhood(game, player) - free_spaces_of_neighborhood(game, game.get_opponent(player)))
     elif free_space_ratio > 0.2:
         # Now we are almost in the final phase, try to stay away from opponent
-        return distance_score(game.get_player_location(player), game.get_player_location(game.get_opponent(player)))
+        return float(distance_score(game.get_player_location(player), game.get_player_location(game.get_opponent(player))))
     else:
         #Now the board is almost full, legal_moves is the most important indicator
-        return distance_score(game.get_player_location(player), game.get_player_location(game.get_opponent(player)))
-
+        return float(len(game.get_legal_moves(player)))
 
 def weighted_open_moves(game, player):
     if game.is_loser(player):
@@ -97,31 +103,25 @@ def distance_score(loc1, loc2):
     return sqrt((loc1[0] - loc2[0]) ** 2 + (loc1[1] - loc2[1]) ** 2) + 1
 
 
-def custom_score_2(game, player):
+def custom_score_random(game, player):
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
     return random.randrange(-100, 100)
 
+def custom_score_2(game, player):
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    return free_spaces_of_neighborhood(game, player) ** 2 - free_spaces_of_neighborhood(game, game.get_opponent(player))
+
 def custom_score_3(game, player):
-    """Calculate the heuristic value of a game state from the point of view
-    of the given player.
-
-    Note: this function should be called from within a Player instance as
-    `self.score()` -- you should not need to call this function directly.
-
-    Parameters
-    ----------
-    game : `isolation.Board`
-        An instance of `isolation.Board` encoding the current state of the
-        game (e.g., player locations and blocked cells).
-
-    player : object
-        A player instance in the current game (i.e., an object corresponding to
-        one of the player objects `game.__player_1__` or `game.__player_2__`.)
-
-    Returns
-    -------
-    float
-        The heuristic value of the current game state to the specified player.
-    """
     return 1.
 
 
@@ -147,8 +147,8 @@ class IsolationPlayer:
         positive value large enough to allow the function to return before the
         timer expires.
     """
-    def __init__(self, search_depth=3, score_fn=custom_score, timeout=10.):
-        self.search_depth = inf #search_depth
+    def __init__(self, search_depth=5, score_fn=custom_score, timeout=10.):
+        self.search_depth = search_depth
         self.score = score_fn
         self.time_left = None
         self.TIMER_THRESHOLD = timeout
@@ -196,12 +196,21 @@ class MinimaxPlayer(IsolationPlayer):
         try:
             # The try/except block will automatically catch the exception
             # raised when the timer is about to expire.
-            return self.minimax(game, self.search_depth)
+            best_move = self.minimax(game, self.search_depth)
 
         except SearchTimeout:
-            pass  # Handle any actions required after timeout as needed
+            if best_move == (-1, -1):
+                legal_moves = game.get_legal_moves(self)
+
+                if len(legal_moves) > 0:
+                    best_move = game.get_legal_moves(self)[0]  # Handle any actions required after timeout as needed
 
         # Return the best move from the last completed search iteration
+        if best_move == (-1, -1):
+            legal_moves = game.get_legal_moves(self)
+
+            if len(legal_moves) > 0:
+                best_move = game.get_legal_moves(self)[0]
         return best_move
 
     def minimax(self, game, depth):
@@ -329,18 +338,26 @@ class AlphaBetaPlayer(IsolationPlayer):
         # in case the search fails due to timeout
         best_move = (-1, -1)
 
-        while True:
-            try:
-                # The try/except block will automatically catch the exception
-                # raised when the timer is about to expire.
+        try:
+            # The try/except block will automatically catch the exception
+            # raised when the timer is about to expire.
+            while time_left() > self.TIMER_THRESHOLD:
                 best_move = self.alphabeta(game, self.search_depth, -inf, inf)
                 self.search_depth += 1
+            if best_move == (-1, -1):
+                legal_moves = game.get_legal_moves(self)
 
-            except SearchTimeout:
-                break  # Handle any actions required after timeout as needed
+                if len(legal_moves) > 0:
+                    best_move = game.get_legal_moves(self)[0]
+            return best_move
 
-        # Return the best move from the last completed search iteration
-        return best_move
+        except SearchTimeout:
+            if best_move == (-1, -1):
+                legal_moves = game.get_legal_moves(self)
+
+                if len(legal_moves) > 0:
+                    best_move = game.get_legal_moves(self)[0]
+            return best_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
