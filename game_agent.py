@@ -54,6 +54,7 @@ def custom_score(game, player):
         #Now the board is almost full, legal_moves is the most important indicator
         return float(len(game.get_legal_moves(player)))
 
+
 def weighted_open_moves(game, player):
     if game.is_loser(player):
         return float("-inf")
@@ -112,6 +113,7 @@ def custom_score_random(game, player):
 
     return random.randrange(-100, 100)
 
+
 def custom_score_2(game, player):
     if game.is_loser(player):
         return float("-inf")
@@ -119,11 +121,24 @@ def custom_score_2(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    return free_spaces_of_neighborhood(game, player) ** 2 - free_spaces_of_neighborhood(game, game.get_opponent(player))
+    return float(free_spaces_of_neighborhood(game, player) ** 2 - free_spaces_of_neighborhood(game, game.get_opponent(player)))
+
 
 def custom_score_3(game, player):
-    return 1.
+    if game.is_loser(player):
+        return float("-inf")
 
+    if game.is_winner(player):
+        return float("inf")
+
+    free_space_ratio = len(game.get_blank_spaces()) / (game.width * game.height)
+
+    if free_space_ratio > 0.3:
+        # Now we are almost in the final phase, try to stay away from opponent
+        return float(distance_score(game.get_player_location(player), game.get_player_location(game.get_opponent(player))))
+    else:
+        #Now the board is almost full, legal_moves is the most important indicator
+        return len(game.get_legal_moves(player)) ** 2 -len(game.get_legal_moves(game.get_opponent(player))) * 1.5
 
 class IsolationPlayer:
     """Base class for minimax and alphabeta agents -- this class is never
@@ -252,8 +267,7 @@ class MinimaxPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout()
+        self._check_timeout()
 
         return self._max_value(game, depth)[1]
 
@@ -349,6 +363,8 @@ class AlphaBetaPlayer(IsolationPlayer):
 
                 if len(legal_moves) > 0:
                     best_move = game.get_legal_moves(self)[0]
+                else:
+                    print("forfeit in AB.try")
             return best_move
 
         except SearchTimeout:
@@ -357,6 +373,8 @@ class AlphaBetaPlayer(IsolationPlayer):
 
                 if len(legal_moves) > 0:
                     best_move = game.get_legal_moves(self)[0]
+                else:
+                    print("forfeit in AB.SearchTimeOut")
             return best_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
@@ -404,8 +422,7 @@ class AlphaBetaPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout()
+        self._check_timeout()
 
         return self._max_value(game, depth, -inf, inf)[1]
 
