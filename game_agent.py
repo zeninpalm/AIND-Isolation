@@ -207,6 +207,7 @@ class MinimaxPlayer(IsolationPlayer):
         # Initialize the best move so that this function returns something
         # in case the search fails due to timeout
         best_move = (-1, -1)
+        legal_moves = game.get_legal_moves()
 
         try:
             # The try/except block will automatically catch the exception
@@ -214,18 +215,14 @@ class MinimaxPlayer(IsolationPlayer):
             best_move = self.minimax(game, self.search_depth)
 
         except SearchTimeout:
-            if best_move == (-1, -1):
-                legal_moves = game.get_legal_moves(self)
-
+            if best_move not in legal_moves:
                 if len(legal_moves) > 0:
-                    best_move = game.get_legal_moves(self)[0]  # Handle any actions required after timeout as needed
+                    best_move = legal_moves[0]  # Handle any actions required after timeout as needed
 
         # Return the best move from the last completed search iteration
-        if best_move == (-1, -1):
-            legal_moves = game.get_legal_moves(self)
-
+        if best_move not in legal_moves:
             if len(legal_moves) > 0:
-                best_move = game.get_legal_moves(self)[0]
+                best_move = legal_moves[0]
         return best_move
 
     def minimax(self, game, depth):
@@ -283,7 +280,10 @@ class MinimaxPlayer(IsolationPlayer):
         self._check_timeout()
         legal_moves = game.get_legal_moves(game.active_player)
         if self._reaches_terminal(game.get_legal_moves(game.active_player), depth):
-            return self.score(game, self), None
+            if len(legal_moves) > 0:
+                return self.score(game, self), legal_moves[0]
+            else:
+                return self.score(game, self), (-1, -1)
 
         value = inf
         min_move = None
@@ -298,7 +298,10 @@ class MinimaxPlayer(IsolationPlayer):
         self._check_timeout()
         legal_moves = game.get_legal_moves(game.active_player)
         if self._reaches_terminal(game.get_legal_moves(game.active_player), depth):
-            return self.score(game, self), None
+            if len(legal_moves) > 0:
+                return self.score(game, self), legal_moves[0]
+            else:
+                return self.score(game, self), (-1, -1)
 
         value = -inf
         max_move = None
@@ -351,6 +354,7 @@ class AlphaBetaPlayer(IsolationPlayer):
         # Initialize the best move so that this function returns something
         # in case the search fails due to timeout
         best_move = (-1, -1)
+        legal_moves = game.get_legal_moves()
 
         try:
             # The try/except block will automatically catch the exception
@@ -358,23 +362,17 @@ class AlphaBetaPlayer(IsolationPlayer):
             while time_left() > self.TIMER_THRESHOLD:
                 best_move = self.alphabeta(game, self.search_depth, -inf, inf)
                 self.search_depth += 1
-            if best_move == (-1, -1):
-                legal_moves = game.get_legal_moves(self)
-
+            if best_move not in legal_moves:
                 if len(legal_moves) > 0:
-                    best_move = game.get_legal_moves(self)[0]
-                else:
-                    print("forfeit in AB.try")
+                    best_move = legal_moves[0]
+
             return best_move
 
         except SearchTimeout:
-            if best_move == (-1, -1):
-                legal_moves = game.get_legal_moves(self)
-
+            if best_move not in legal_moves:
                 if len(legal_moves) > 0:
-                    best_move = game.get_legal_moves(self)[0]
-                else:
-                    print("forfeit in AB.SearchTimeOut")
+                    best_move = legal_moves[0]
+
             return best_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
@@ -438,7 +436,10 @@ class AlphaBetaPlayer(IsolationPlayer):
         self._check_timeout()
         legal_moves = game.get_legal_moves(game.active_player)
         if self._reaches_terminal(game.get_legal_moves(game.active_player), depth):
-            return self.score(game, self), None
+            if len(legal_moves) > 0:
+                return self.score(game, self), legal_moves[0]
+            else:
+                return self.score(game, self), (-1, -1)
 
         value = inf
         min_move = None
@@ -456,7 +457,10 @@ class AlphaBetaPlayer(IsolationPlayer):
         self._check_timeout()
         legal_moves = game.get_legal_moves(game.active_player)
         if self._reaches_terminal(game.get_legal_moves(game.active_player), depth):
-            return self.score(game, self), None
+            if len(legal_moves) > 0:
+                return self.score(game, self), legal_moves[0]
+            else:
+                return self.score(game, self), (-1, -1)
 
         value = -inf
         max_move = None
