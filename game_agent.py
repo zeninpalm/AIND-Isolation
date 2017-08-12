@@ -64,7 +64,7 @@ def weighted_open_moves(game, player):
 
     all_moves = [(i, j) for i in range(0, 7) for j in range(0, 7)]
     weighted_board = {(row, col): assign_weight_to_move((row, col)) for (row, col) in all_moves}
-    legal_moves = game.get_legal_moves(player)
+    legal_moves = game.get_legal_moves()
 
     own_score = 0
     for legal_move in legal_moves:
@@ -215,14 +215,16 @@ class MinimaxPlayer(IsolationPlayer):
             best_move = self.minimax(game, self.search_depth)
 
         except SearchTimeout:
-            if best_move not in legal_moves:
-                if len(legal_moves) > 0:
-                    best_move = legal_moves[0]  # Handle any actions required after timeout as needed
+            if len(legal_moves) > 0:
+                return legal_moves[0]
+            return -1, -1
 
         # Return the best move from the last completed search iteration
         if best_move not in legal_moves:
             if len(legal_moves) > 0:
                 best_move = legal_moves[0]
+            else:
+                best_move = (-1, -1)
         return best_move
 
     def minimax(self, game, depth):
@@ -265,12 +267,11 @@ class MinimaxPlayer(IsolationPlayer):
                 testing.
         """
         self._check_timeout()
-
         return self._max_value(game, depth)[1]
 
     def _check_timeout(self):
         if self.time_left() < self.TIMER_THRESHOLD:
-                    raise SearchTimeout()
+            raise SearchTimeout()
 
     def _reaches_terminal(self, legal_moves, depth):
         self._check_timeout()
@@ -279,7 +280,7 @@ class MinimaxPlayer(IsolationPlayer):
     def _min_value(self, game, depth):
         self._check_timeout()
         legal_moves = game.get_legal_moves(game.active_player)
-        if self._reaches_terminal(game.get_legal_moves(game.active_player), depth):
+        if self._reaches_terminal(legal_moves, depth):
             if len(legal_moves) > 0:
                 return self.score(game, self), legal_moves[0]
             else:
@@ -362,18 +363,17 @@ class AlphaBetaPlayer(IsolationPlayer):
             while time_left() > self.TIMER_THRESHOLD:
                 best_move = self.alphabeta(game, self.search_depth, -inf, inf)
                 self.search_depth += 1
+
             if best_move not in legal_moves:
                 if len(legal_moves) > 0:
-                    best_move = legal_moves[0]
-
+                    return legal_moves[0]
+                return -1, -1
             return best_move
 
         except SearchTimeout:
-            if best_move not in legal_moves:
-                if len(legal_moves) > 0:
-                    best_move = legal_moves[0]
-
-            return best_move
+            if len(legal_moves) > 0:
+                return legal_moves[0]
+            return -1, -1
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
@@ -435,7 +435,7 @@ class AlphaBetaPlayer(IsolationPlayer):
     def _min_value(self, game, depth, alpha, beta):
         self._check_timeout()
         legal_moves = game.get_legal_moves(game.active_player)
-        if self._reaches_terminal(game.get_legal_moves(game.active_player), depth):
+        if self._reaches_terminal(legal_moves, depth):
             if len(legal_moves) > 0:
                 return self.score(game, self), legal_moves[0]
             else:
@@ -456,7 +456,7 @@ class AlphaBetaPlayer(IsolationPlayer):
     def _max_value(self, game, depth, alpha, beta):
         self._check_timeout()
         legal_moves = game.get_legal_moves(game.active_player)
-        if self._reaches_terminal(game.get_legal_moves(game.active_player), depth):
+        if self._reaches_terminal(legal_moves, depth):
             if len(legal_moves) > 0:
                 return self.score(game, self), legal_moves[0]
             else:
